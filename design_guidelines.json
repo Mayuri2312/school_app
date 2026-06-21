@@ -1,0 +1,191 @@
+{
+  "app_name": "EduTrack Parent",
+  "personality": "1 iOS-Native Clean",
+  "personality_one_liner": "A highly trustworthy, structured, and content-forward experience that gives parents absolute clarity on their child's school day.",
+  "color": {
+    "surface": "#F9F9F8",
+    "onSurface": "#1C1E1C",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurfaceSecondary": "#1C1E1C",
+    "surfaceTertiary": "#F2F2EF",
+    "onSurfaceTertiary": "#646864",
+    "surfaceInverse": "#2B2D2B",
+    "onSurfaceInverse": "#F9F9F8",
+    "brand": "#5C785A",
+    "brandPrimary": "#5C785A",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#A3B8A6",
+    "onBrandSecondary": "#1A231B",
+    "brandTertiary": "#E7EFE8",
+    "onBrandTertiary": "#293B2B",
+    "success": "#4A7751",
+    "onSuccess": "#FFFFFF",
+    "warning": "#B87B2E",
+    "onWarning": "#FFFFFF",
+    "error": "#BA4B45",
+    "onError": "#FFFFFF",
+    "info": "#4E706F",
+    "onInfo": "#FFFFFF",
+    "border": "#E3E3E0",
+    "borderStrong": "#D1D1CD",
+    "divider": "#E3E3E0"
+  },
+  "typography": {
+    "displayFontFamily": "Plus Jakarta Sans",
+    "textFontFamily": "Plus Jakarta Sans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous iOS-native vertical spacing. Primary CTAs must be sticky at the bottom. Cards must fill the row horizontally (100% width in single column).",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": 1,
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use glass on Bottom Tab Bar.",
+      "Use glass on sticky headers over scrolling content.",
+      "Use glass on floating action buttons (FAB) or bottom-sheet drag handles.",
+      "Always apply a translucent tinted base (>=70% surfaceInverse) UNDER the text when overlaying on hero images."
+    ],
+    "dont's": [
+      "Never apply glass to form fields, standard list rows, or body content regions."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Login",
+      "purpose": "Authenticate parent with School Name and Student Name.",
+      "states": {
+        "loading": "Centered spinner on surface.",
+        "empty": "N/A",
+        "error": "Standard alert toast using error colors."
+      },
+      "layout": "Hero image (login_hero) taking up the top 40% of the screen with a top-to-bottom transparent-to-70%-surfaceInverse gradient scrim. Form sits in a surfaceSecondary card overlapping the hero image (negative top margin). Form contains School Name input, Student Name input, and a sticky sticky brandPrimary Submit button at the bottom using KeyboardAvoidingView."
+    },
+    {
+      "name": "Home Dashboard",
+      "purpose": "Task-first central hub summarizing attendance, next classes, and unread announcements.",
+      "states": {
+        "loading": "Skeleton loaders for cards.",
+        "empty": "N/A",
+        "error": "Error message with 'Tap to retry' near the top."
+      },
+      "layout": "Top Header (sticky, glass) with Child Name, Avatar, and Notification Bell. A 'Hero Summary Card' (surfaceSecondary) showing Today's Attendance status and Next Class. A 'Quick Actions' horizontal scroll row of pill buttons (Fees, Leaves, AI Helper). Below, primary cards (width: 100%) for 'Homework Due Today' and 'Latest Announcement'. Bottom Tabs for navigation."
+    },
+    {
+      "name": "Schedule (Timetable)",
+      "purpose": "Displays weekly class timetable and upcoming exams.",
+      "states": {
+        "loading": "Skeleton timeline view.",
+        "empty": "Illustration + 'No classes scheduled for today.'",
+        "error": "Retry button centered."
+      },
+      "layout": "Glass-backed top header containing a Segmented Control (Classes | Exams). Scrollable timeline view for classes. Each row is a surfaceSecondary card with left-aligned time track and subject details on the right."
+    },
+    {
+      "name": "Homework Feed",
+      "purpose": "Chronological feed of daily teaching updates and homework.",
+      "states": {
+        "loading": "Skeleton list items.",
+        "empty": "ai_helper_empty image + 'No homework assigned yet.'",
+        "error": "Retry button."
+      },
+      "layout": "List of surfaceSecondary cards. Each card has a subject icon in a brandTertiary tinted container, Title, Date, Description, and a tinted 'View Attachment' button. Sticky CTA at the bottom to open 'AI Homework Helper'."
+    },
+    {
+      "name": "Bus Tracker",
+      "purpose": "Live map tracking of the school bus and route details.",
+      "states": {
+        "loading": "Skeleton map.",
+        "empty": "Bus illustration + 'No active bus route right now.'",
+        "error": "Retry connection button."
+      },
+      "layout": "Full-bleed map taking the upper 60% of the screen. A persistent @gorhom/bottom-sheet (surfaceSecondary) covering the bottom 40%. The sheet header uses an expo-blur drag handle. Inside the sheet: Driver Info (Avatar, Name, Call Button), ETA, Next Stop, and a timeline of the route. Uses bus_tracker_hero image as a fallback visual in the sheet if driver avatar is missing."
+    },
+    {
+      "name": "AI Homework Helper",
+      "purpose": "Claude-powered chat to assist parents in helping their kids with homework.",
+      "states": {
+        "loading": "Thinking dots...",
+        "empty": "ai_helper_empty full-bleed background with scrim, 'Ask me anything about 5th Grade Math'.",
+        "error": "Inline error bubble."
+      },
+      "layout": "Chat interface. Messages from the AI are surfaceSecondary, user messages are brandPrimary. KeyboardAvoidingView used to keep the text input sticky at the bottom above the safe area."
+    },
+    {
+      "name": "Profile & Fees",
+      "purpose": "Manage student profile, track fees, and request leaves.",
+      "states": {
+        "loading": "Skeleton content.",
+        "empty": "N/A",
+        "error": "Retry button."
+      },
+      "layout": "Scroll view. Top section: Student details (Class, Section, Roll Number). Middle section: Fee Tracker (progress bar for paid vs due, surfaceSecondary cards for due invoices). Bottom section: 'Request Leave' button (brandSecondary). Sticky 'Pay Due Fees' primary CTA at bottom if there is an outstanding balance."
+    }
+  ],
+  "haptics": {
+    "Primary CTA Tap": "impactMedium",
+    "Tab Switch": "selection",
+    "Segmented Control Toggle": "selection",
+    "Sheet Snap": "impactLight",
+    "Leave Request Submit": "notificationSuccess"
+  },
+  "images": {
+    "login_hero": {
+      "url": "https://images.unsplash.com/photo-1778751225720-ee0f1d2ad14e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzY2hvb2wlMjBidWlsZGluZyUyMGV4dGVyaW9yfGVufDB8fHx8MTc4MjA0MTUxNXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Modern building with glass windows and green hill"
+    },
+    "bus_tracker_hero": {
+      "url": "https://images.unsplash.com/photo-1689973849511-e1995810cf7a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHwxfHx5ZWxsb3clMjBzY2hvb2wlMjBidXMlMjBkcml2aW5nfGVufDB8fHx8MTc4MjA0MTUxNXww&ixlib=rb-4.1.0&q=85",
+      "alt": "a row of yellow school buses parked in a parking lot"
+    },
+    "ai_helper_empty": {
+      "url": "https://images.unsplash.com/photo-1514369118554-e20d93546b30?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwc3R1ZHlpbmclMjBub3RlYm9va3xlbnwwfHx8fDE3ODIwNDE1MTV8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "woman writing on book"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the iOS-Native Clean layout rules: generous padding, highly readable fonts (Plus Jakarta Sans capped at weight 500), and card-based hierarchy.",
+    "Do NOT use any blue, purple, or indigo colors anywhere. Rely exclusively on the Sage Green (#5C785A) brand palette and neutral grays/off-whites.",
+    "Do NOT use emojis anywhere in the app UI.",
+    "Whenever overlaying text on a background image (e.g., Login Hero), you MUST apply a vertical linear gradient scrim behind the text (transparent to >=70% surfaceInverse) to guarantee contrast.",
+    "Use Phosphor icons consistently, matching weights across the UI.",
+    "Ensure 'Submit', 'Pay Due Fees', and 'AI Helper' CTAs are wrapped in fixed containers that remain sticky at the bottom of the screen (above the home indicator) when content scrolls above them.",
+    "Apply 'expo-glass-effect' / 'expo-blur' on the bottom tab bar and sticky headers.",
+    "Haptics have been documented; bind them to all tab switches, CTA taps, and segmented controls.",
+    "For the Bus Tracker, ensure the map fills the background and use @gorhom/bottom-sheet for the driver/timeline info overlaid on top."
+  ]
+}
