@@ -14,9 +14,14 @@ from typing import Optional, List
 import uuid
 from datetime import datetime, timezone
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
+#from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
 
 from seed_data import seed_all
+
+from fastapi.middleware.cors import CORSMiddleware
+
+
+
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -40,6 +45,14 @@ api_router = APIRouter(prefix="/api")
 
 logger = logging.getLogger("schoolapp")
 logging.basicConfig(level=logging.INFO)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or specify your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ---------------- Models ----------------
@@ -102,6 +115,11 @@ async def send_push(recipients, data, idempotency_key=None):
             logger.warning(f"Push trigger failed: {resp.status_code} {resp.text[:200]}")
     except Exception as e:
         logger.warning(f"Push trigger exception: {e}")
+
+        
+
+   
+   
 
 
 # ---------------- Routes ----------------
