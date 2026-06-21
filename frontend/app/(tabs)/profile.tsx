@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
 
 import { theme, API_BASE } from "@/src/theme";
 import { useAuth } from "@/src/auth";
@@ -10,15 +13,54 @@ import { useAuth } from "@/src/auth";
 export default function Profile() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { student, school, signOut } = useAuth();
+  const { student, school, signOut, updateStudent } = useAuth();
   const [feeSummary, setFeeSummary] = useState<{ total: number; paid: number; due: number } | null>(null);
   const [att, setAtt] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!student) return;
     fetch(`${API_BASE}/fees/${student.id}`).then((r) => r.json()).then((j) => setFeeSummary(j));
     fetch(`${API_BASE}/attendance/${student.id}`).then((r) => r.json()).then((j) => setAtt(j));
   }, [student]);
+
+  async function changePhoto() {
+    if (!student) return;
+    if (Platform.OS !== "web") {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6,
+      base64: true,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    const dataUrl =
+      asset.base64 && asset.mimeType
+        ? `data:${asset.mimeType};base64,${asset.base64}`
+        : asset.base64
+        ? `data:image/jpeg;base64,${asset.base64}`
+        : asset.uri;
+    setUploading(true);
+    try {
+      const r = await fetch(`${API_BASE}/student/${student.id}/photo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photo_url: dataUrl }),
+      });
+      if (r.ok) {
+        const updated = await r.json();
+        await updateStudent({ photo_url: updated.photo_url });
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
 
   if (!student || !school) return null;
 
@@ -29,9 +71,25 @@ export default function Profile() {
       <ScrollView contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 140 }}>
         {/* Student info card */}
         <View style={styles.profileHead}>
-          <View style={[styles.avatar, { backgroundColor: student.avatar_color }]}>
-            <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
-          </View>
+          <Pressable
+            testID="profile-avatar-button"
+            onPress={changePhoto}
+            style={[styles.avatar, { backgroundColor: student.avatar_color }]}
+            disabled={uploading}
+          >
+            {student.photo_url ? (
+              <Image source={student.photo_url} style={styles.avatarImg} contentFit="cover" testID="profile-avatar-img" />
+            ) : (
+              <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
+            )}
+            <View style={styles.cameraBadge}>
+              {uploading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="camera" size={14} color="#fff" />
+              )}
+            </View>
+          </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.name} testID="profile-name">{student.name}</Text>
             <Text style={styles.subtle}>{school.name}</Text>
@@ -139,8 +197,16 @@ function MenuItem({ icon, label, onPress, testID }: { icon: any; label: string; 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.surface },
   profileHead: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: theme.spacing.lg },
-  avatar: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: "#fff", fontSize: 28, fontWeight: "600" },
+  avatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" },
+  avatarImg: { width: "100%", height: "100%" },
+  avatarText: { color: "#fff", fontSize: 30, fontWeight: "600" },
+  cameraBadge: {
+    position: "absolute", right: 0, bottom: 0,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: theme.colors.brandPrimary,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 2, borderColor: theme.colors.surface,
+  },
   name: { fontSize: 20, fontWeight: "700", color: theme.colors.onSurface },
   subtle: { fontSize: 13, color: theme.colors.onSurfaceTertiary },
   infoGrid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -4 },

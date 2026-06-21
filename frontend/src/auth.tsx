@@ -14,6 +14,7 @@ export type Student = {
   parent_name: string;
   parent_phone: string;
   avatar_color: string;
+  photo_url?: string;
   dob: string;
   admission_no: string;
 };
@@ -25,6 +26,7 @@ type AuthState = {
   school: School | null;
   loading: boolean;
   setSession: (student: Student, school: School) => Promise<void>;
+  updateStudent: (patch: Partial<Student>) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -75,6 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await store.set(KEY, JSON.stringify({ student: s, school: sc }));
   }
 
+  async function updateStudent(patch: Partial<Student>) {
+    if (!student) return;
+    const next = { ...student, ...patch };
+    setStudent(next);
+    await store.set(KEY, JSON.stringify({ student: next, school }));
+  }
+
   async function signOut() {
     setStudent(null);
     setSchool(null);
@@ -82,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ student, school, loading, setSession, signOut }}>
+    <Ctx.Provider value={{ student, school, loading, setSession, updateStudent, signOut }}>
       {children}
     </Ctx.Provider>
   );

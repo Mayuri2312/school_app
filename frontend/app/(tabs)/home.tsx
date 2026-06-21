@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -91,7 +92,11 @@ export default function Home() {
       <View style={styles.header}>
         <View style={styles.avatarRow}>
           <View style={[styles.avatar, { backgroundColor: student.avatar_color }]}>
-            <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
+            {student.photo_url ? (
+              <Image source={student.photo_url} style={styles.avatarImg} contentFit="cover" testID="home-avatar-img" />
+            ) : (
+              <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.hello}>Hello, {student.parent_name?.split(" ").slice(0, 2).join(" ")}</Text>
@@ -286,7 +291,8 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   avatarRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarImg: { width: "100%", height: "100%" },
   avatarText: { color: "#fff", fontSize: 18, fontWeight: "600" },
   hello: { fontSize: 12, color: theme.colors.onSurfaceTertiary },
   studentName: { fontSize: 15, fontWeight: "600", color: theme.colors.onSurface },

@@ -72,6 +72,10 @@ class PayBody(BaseModel):
     fee_id: str
 
 
+class PhotoBody(BaseModel):
+    photo_url: str
+
+
 def _clean(d):
     if d is None:
         return None
@@ -155,6 +159,17 @@ async def get_student(student_id: str):
     if not s:
         raise HTTPException(404, "Student not found")
     return s
+
+
+@api_router.post("/student/{student_id}/photo")
+async def update_student_photo(student_id: str, body: PhotoBody):
+    res = await db.students.update_one(
+        {"id": student_id}, {"$set": {"photo_url": body.photo_url}}
+    )
+    if res.matched_count == 0:
+        raise HTTPException(404, "Student not found")
+    student = await db.students.find_one({"id": student_id}, {"_id": 0})
+    return student
 
 
 @api_router.get("/homework/{student_id}")
