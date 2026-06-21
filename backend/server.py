@@ -193,7 +193,8 @@ async def get_fees(student_id: str):
     total = sum(r["amount"] for r in rows)
     paid = sum(r["amount"] for r in rows if r["status"] == "paid")
     due = sum(r["amount"] for r in rows if r["status"] == "due")
-    return {"items": rows, "total": total, "paid": paid, "due": due}
+    upcoming = sum(r["amount"] for r in rows if r["status"] == "upcoming")
+    return {"items": rows, "total": total, "paid": paid, "due": due, "upcoming": upcoming}
 
 
 @api_router.post("/fees/pay")
@@ -453,10 +454,11 @@ async def ai_chat_sync(body: ChatBody):
 async def register_push(body: RegisterPushBody):
     try:
         resp = await _push_client.post("/api/v1/push/users/register", json=body.model_dump())
-        if resp.status_code == 401:
-            raise HTTPException(500, "EMERGENT_PUSH_KEY missing or invalid")
+        if resp.status_code in (401, 403):
+            # Placeholder/missing key — by design before deploy. Don't crash.
+            return {"status": "skipped", "reason": "push key not configured"}
         if resp.status_code >= 500:
-            raise HTTPException(502, "Push provider unavailable")
+            return {"status": "skipped", "reason": "push provider unavailable"}
         resp.raise_for_status()
     except HTTPException:
         raise
