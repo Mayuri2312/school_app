@@ -1,0 +1,71 @@
+{
+  "summary": "First full E2E MVP test of EduTrack School Parent App (Expo + FastAPI + MongoDB). Backend pytest: 19 passed, 1 skipped, 1 failed (95% pass). Frontend mobile-web flows verified end-to-end: login, home dashboard, schedule (Classes/Exams + day chips), bus simulation with animated marker, profile, fees, leave request screen, and AI Helper (Claude Sonnet 4.5) chat that returned real tutoring replies. One CRITICAL backend bug: /api/register-push returns HTTP 500 when EMERGENT_PUSH_KEY=placeholder triggers upstream 401, contradicting the spec which says it must return {status: skipped} and never crash. One MINOR backend semantics issue: /api/fees summary excludes 'upcoming' status items from `due`, so total != paid + due (frontend works around this). One MINOR frontend UX issue: Leave Request submit silently no-ops when dates are blank (no validation toast). Expo package version mismatches (warnings only): expo 54.0.34 (expected ~54.0.35), expo-font 14.0.11 (~14.0.12), expo-router 6.0.23 (~6.0.24).",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/register-push",
+        "issue": "Returns HTTP 500 when upstream push provider responds 401 (placeholder key). Spec requires endpoint to return {status: 'skipped'} or {status: 'registered'} and never crash. Root cause: server.py line ~456 raises HTTPException(500, 'EMERGENT_PUSH_KEY missing or invalid') for upstream 401 BEFORE the `except Exception` fallback. Fix: on 401 just return {'status': 'skipped', 'reason': 'placeholder key'} so deploy works with placeholder.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "GET /api/fees/{student_id}",
+        "issue": "Summary fields total, paid, due do not balance when fees have status 'upcoming' or 'overdue'. total includes all items but paid/due only count those exact statuses, leaving 'upcoming' uncategorized. Recommend adding an `upcoming` field to the response so frontend doesn't have to compute total - paid - due."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Leave Request form (app/leave-request.tsx)",
+        "issue": "Submit button silently fails with no toast/error when From Date or To Date is empty. Form just resets and no new row appears in Previous Requests. Add client-side validation + user-visible error.",
+        "testID": "leave-submit-button",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "All screens",
+        "issues": [
+          "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' — non-fatal but should be migrated."
+        ]
+      }
+    ],
+    "react_native_issues": [
+      {
+        "component": "package.json (expo)",
+        "issue": "Expo package versions out of sync with installed expo SDK. expo@54.0.34 expects ~54.0.35; expo-font@14.0.11 expects ~14.0.12; expo-router@6.0.23 expects ~6.0.24. Run `npx expo install --check` to align. Reference: /app/frontend/package.json"
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_school_app.py",
+    "/app/test_reports/pytest/results.xml"
+  ],
+  "action_items": [
+    "FIX /api/register-push to never return 5xx when EMERGENT_PUSH_KEY is placeholder — return {status: 'skipped', reason: ...} on 401/403 from upstream. (server.py register_push handler)",
+    "(Optional) Add `upcoming` field to GET /api/fees response and/or make total = paid + due + upcoming + overdue.",
+    "Add front-end validation (or toast) on Leave Request when From/To dates are empty.",
+    "Run `npx expo install --check` to upgrade expo/expo-font/expo-router patch versions."
+  ],
+  "critical_code_review_comments": [
+    "server.py register_push: 401 from upstream is treated as a 500 to the client, contradicting the contract. The except HTTPException re-raise prevents the soft-skipped fallback.",
+    "server.py is ~496 lines — still within limit but starting to grow; consider splitting routers (auth, school, ai, push) into modules if more features are added.",
+    "Several endpoints rely on $regex with user-supplied input (login: school_name, student_name). For demo this is fine, but if real users come in, escape regex metacharacters to prevent ReDoS-style edge cases.",
+    "Frontend Leave Request submit lacks client-side validation; UX silently fails."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_school_app.py"
+  ],
+  "success_rate": {
+    "backend": "95% (19/20 effective tests; 1 skipped because no due fee remaining after pay test)",
+    "frontend": "~95% (all major screens & flows render and integrate with backend; only minor UX miss on empty-date leave submission)"
+  },
+  "seed_data_creation": "No new seed data created. Used existing demo seed (Aarav Sharma / aarav123 / Greenwood International). One leave request (reason='TEST_<uuid>') was inserted by tests; harmless and identifiable by TEST_ prefix.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend test suite at /app/backend/tests/test_school_app.py — run with `pytest backend/tests/test_school_app.py -v`. Demo creds in /app/memory/test_credentials.md. Note: test_pay_fee_updates_status pays one due fee, which may make subsequent runs skip (no due remaining) until DB reseeded. The seed only runs on startup when students collection is empty, so to fully retest payments, drop the `school_parent_app` DB and restart backend, or extend seed to top-up due fees. Frontend AI chat uses /api/ai/chat-sync (non-streaming) and works reliably; ignore /api/ai/chat SSE for web testing.",
+  "rca_of_issue": "REGISTER-PUSH 500 — Reproduction: `curl -X POST $BASE/api/register-push -H 'Content-Type: application/json' -d '{\"user_id\":\"stu-001\",\"platform\":\"web\",\"device_token\":\"t\"}'` returns 500 with {detail: 'EMERGENT_PUSH_KEY missing or invalid'}. Cause: in server.py register_push(), when upstream returns 401 (because EMERGENT_PUSH_KEY is the literal string 'placeholder'), the code raises HTTPException(500, ...), and the `except HTTPException: raise` re-raises before the soft `except Exception` can convert to skipped. Mitigation: replace the 401 branch with `return {'status': 'skipped', 'reason': 'placeholder push key'}` so the endpoint stays a 200/201 until a real EMERGENT_PUSH_KEY is provisioned. FEES SUMMARY — Reproduction: GET /api/fees/stu-001 returned total=74000, paid=37000, due=18500 (sum 55500). Cause: seed has fee statuses 'paid', 'due', and 'upcoming'/'overdue' but the aggregation only sums paid and due. Mitigation: extend the response with `upcoming` and `overdue` fields, or compute due as total-paid."
+}
